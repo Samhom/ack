@@ -1320,7 +1320,32 @@ java基础
 				如果正在执行任务，则不应该中断线程；
 				如果该线程现在不是独占锁的状态，也就是空闲的状态，说明它没有在处理任务，这时可以对该线程进行中断；
 				线程池在执行 shutdown 方法或 tryTerminate 方法时会调用 interruptIdleWorkers 方法来中断空闲的线程，interruptIdleWorkers 方法会使用 tryLock 方法来判断线程池中的线程是否是空闲状态；
-				之所以设置为不可重入，是因为我们不希望任务在调用像 setCorePoolSize 这样的线程池控制方法时重新获取锁。如果使用R eentrantLock，它是可重入的，这样如果在任务中调用了如 setCorePoolSize 这类线程池控制的方法，会中断正在运行的线程。
+				之所以设置为不可重入，是因为我们不希望任务在调用像 setCorePoolSize 这样的线程池控制方法时重新获取锁。如果使用 ReentrantLock，它是可重入的，这样如果在任务中调用了如 setCorePoolSize 这类线程池控制的方法，会中断正在运行的线程。
+					然而设计可重入锁的目的就是防止死锁的发生，在以下程序中，子类改写了父类的 synchronized 方法，然后调用父类中的方法，此时如果内置锁不是可重入的，那么这段代码将产生死锁。
+				由于 Widget 和 LoggingWidget 中 doSomething 方法都是 synchronized 方法，因此每个每个 doSomething 方法在执行前都会获取 Widget 上的锁。然而如果内置锁不是可重入的，那么调用 super.doSomething( )时无法获得 Widget 上的锁，
+				因为这个锁已经被持有，从而线程将永远停顿下去，等待一个永远也无法获得的锁。重入则避免了这种死锁情况的发生：	
+					public class Widget {
+					    public synchronized void doSomething() {
+					        ........
+					    }
+					}
+
+					public class LoggingWidget extends Widget {
+					    public synchronized void doSomething() {
+					        super.doSomething();
+					    }
+					}
+				此外，在构造方法中执行了 setState(-1);，把 state 变量设置为-1，为什么这么做呢？是因为AQS中默认的 state 是0，如果刚创建了一个 Worker 对象，还没有执行任务时，这时就不应该被中断，看一下 tryAquire 方法：
+					protected boolean tryAcquire(int unused) {
+					    if (compareAndSetState(0, 1)) {
+					        setExclusiveOwnerThread(Thread.currentThread());
+					        return true;
+					    }
+					    return false;
+					}
+				tryAcquire 方法是根据 state 是否是0来判断的，所以，setState(-1);将 state 设置为-1是为了禁止在执行任务前对线程进行中断。
+				正因为如此，在 runWorker 方法中会先调用 Worker 对象的 unlock 方法将 state 设置为0。
+
 
 	4、submit 和 execut 方法的区别、线程的调度过程
 		submit 方法在接口 ExecutorService 中定义，而 executor 在 Executor 中定义。

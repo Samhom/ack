@@ -568,3 +568,39 @@ n.附加点：线程的生命周期
 可参考：
   https://juejin.im/post/5a743c526fb9a063557d7eba
   https://juejin.im/entry/58fada5d570c350058d3aaad
+ScheduledThreadPoolExecutor 原理分析
+	ScheduledThreadPoolExecutor 的实现，这是一个可以在指定一定延迟时间后或者定时进行任务调度执行的线程池。
+	继承了 ThreadPoolExecutor，实现了 ScheduledExecutorService 接口（ScheduledExecutorService 继承了 ExecutorService 接口），ScheduledExecutorService 接口中扩展了以下4几个方法：
+		方法一、
+			public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit);
+			该方法的作用是提交一个延迟执行的任务，任务从提交时间算起延迟单位为 unit 的 delay 时间后开始执行。 提交的任务不是周期性任务，任务只会执行一次。
+			方法实现可以看代码，在了解了 ThreadPoolExecutor 后这里就没有难理解的地方了。
+		方法二、
+			public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit);
+		方法三、
+			public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit);
+			该方法相对起始时间点以固定频率调用指定的任务（fixed-rate 任务）。当把任务提交到线程池并延迟 initialDelay 时间（时间单位为 unit）后开始执行任务 command。然后从
+			initialDelay + period 时间点再次执行，而后在 initialDelay + 2 * period 时间点再次执行，循环往复，直到抛出异常或者调用了任务的 cancel 方法取消了任务，或者关闭了线程池。
+			scheduleAtFixedRate 的原理与 scheduleWithFixedDelay 类似。
+		方法四、
+			public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+			该方法的作用是，当任务执行完毕后，让其延迟固定时间后再次运行（ fixed-delay 任务）。其中 initialDelay 表示提交任务后延迟多少时间开始执行任务 command, delay 表示
+			当任务执行完毕后延长多少时间后再次运行 command 任务， unit 是 initialDelay 和 delay 的时间单位。任务会一直重复运行直到任务运行中抛出了异常，被取消了，或者关闭了线程池。
+	该线程池队列是 DelayedWorkQueue，其和 DelayedQueue 类似，是一个延迟队列。
+	该线程池内部有一个私有内部类 ScheduledFutureTask 该内部类继承了 FutureTask，FutureTask 的内部有一个变量 state 用来表示任务的状态，一开始状态为 NEW，所有状态为：
+		private static final int NEW = 0; // 初始状态
+		private static final int COMPLETING = 1;   // 执行中状态
+		private static final int NORMAL = 2;       // 正常运行结束状态
+		private static final int EXCEPTIONAL = 3;  // 运行中异常
+		private static final int CANCELLED = 4;    // 任务被取消
+		private static final int INTERRUPTING = 5; // 任务正在被中断
+		private static final int INTERRUPTED = 6;  // 任务已经被中断
+	可能的任务状态转换路径为：
+		NEW → COMPLETING → NORMAL 		// 初始状态 → 执行中 → 正常结束
+		NEW → COMPLETING → EXCEPTIONAL 		// 初始状态 → 执行中 → 执行异常
+		NEW → CANCELLED 			// 始状态 → 任务取消
+		NEW → INTERRUPTING → INTERRUPTED        // 初始状态 → 被中断中 → 被中断
+	ScheduledFutureTask 内部还有一个变量 period 用来表示任务的类型，任务类型如下：
+		• period=O，明当前任务是一次性的，执行完毕后就退出了。
+		• period 为负数，说明当前任务为 fixed-delay 任务，是固定延迟的定时可重复执行任务。
+		• period 为正数，说明当前任务为 fixed-rate 任务，是固定频率的定时可重复执行任务。

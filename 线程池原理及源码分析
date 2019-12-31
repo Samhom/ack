@@ -426,6 +426,7 @@ g.源码分析（重要的方法）
       }
 h.shutdown 与 shutdownNow：
   一、shutdown 方法：
+    线程池就不会再接受新的任务了，但是工作队列里面的任务还是要执行的。该方法会立刻返回，并不等待队列任务完成再返回。
     将线程池切换到 SHUTDOWN 状态，并调用 interruptIdleWorkers 方法请求中断所有空闲的 worker，最后调用 tryTerminate 尝试结束线程池。
     源码如下：
     public void shutdown() {

@@ -99,11 +99,11 @@ public class QuartzTest {
 
 以上两种触发器的形式调度任务，其中 Cron Triggers需要使用到 cron 表达式。
 
-##### Quartzs结构说明
+##### Quartz 结构说明
 
 - Job： 是一个接口，只定义一个方法 execute(JobExecutionContext context)，在实现接口的 execute 方法中编写所需要定时执行的 Job (任务)， JobExecutionContext 类提供了调度应用的一些信息。
 - JobDetail： Quartz 每次调度 Job 时， 都重新创建一个 Job 实例， 所以它不直接接受一个 Job 的实例，相反它接收一个 Job 实现类。
-- Trigger：是一个类，描述触发 Job 执行的时间触发规则。主要有 SimpleTrigger 和 CronTrigger 这两个子类。
+- Trigger：是一个类，描述触发  Job 执行的时间触发规则。主要有 SimpleTrigger 和 CronTrigger 这两个子类。
 - Scheduler：代表一个 Quartz 的独立运行容器， Trigger 和 JobDetail 可以注册到 Scheduler 中，拥有各自的组及名称，组及名称必须唯一（但可以和 Trigger 的组和名称相同，因为它们是不同类型的）。Scheduler 定义了多个接口方法， 允许外部通过组及名称访问和控制容器中 Trigger 和 JobDetail。
 
 ### 二、Java定时器之Timer
@@ -114,8 +114,17 @@ public class QuartzTest {
 
 ```java
 public class Timer {
+    /**
+     * TaskQueue 是一个平衡二叉树堆实现的优先级队列，每个 Timer 对象内部有唯一一个 TaskQueue 队列。
+     */
     private final TaskQueue queue = new TaskQueue();
-
+	
+    /**
+     * TimerThread 是具体执行任务的线程，它从 TaskQueue 队列里面获取优先级最小的任务进行执行
+     * 需要注意的是只有执行完了当前的任务才会从队列里面获取下一个任务而不管队列里面是否有已经到
+     * 了设置的 delay 时间，一个 Timer 只有一个 TimerThread 线程，所以可知 Timer 的内部实现
+     * 是一个多生产者单消费者模型。
+     */
     private final TimerThread thread = new TimerThread(queue);
 
     private final Object threadReaper = new Object() {
@@ -379,6 +388,42 @@ public abstract class TimerTask implements Runnable {
     }
 }
 ```
+
+##### 实现模型
+
+从实现模型可以知道要探究上面的问题只需看 TimerThread 的实现就可以了，TimerThread 的 run 方法主要逻辑源码如下：
+
+```java
+    public void run() {
+       try {
+           mainLoop();
+       } finally {
+           // 有人杀死了这个线程，表现得好像 Timer 已取消
+           synchronized(queue) {
+               newTasksMayBeScheduled = false;
+               queue.clear();  // 消除过时的引用
+           }
+       }
+    }
+
+  	private void mainLoop() {
+        while (true) {
+            try {
+                TimerTask task;
+                boolean taskFired;
+                // 从队列里面获取任务时候要加锁
+                synchronized(queue) {
+                    ......
+                }
+                if (taskFired)  
+                    task.run();// 执行任务
+            } catch(InterruptedException e) {
+            }
+        }
+ 	}
+```
+
+​	由以上代码可知当任务执行过程中抛出了除 InterruptedException 之外的异常后，唯一的消费线程就会因为抛出异常而终止，那么队列里面的其他待执行的任务就会被清除。其实要实现类似 Timer 的功能使用 ScheduledThreadPoolExecutor 的 schedule 是比较好的选择。ScheduledThreadPoolExecutor 中的一个任务抛出了异常，其他任务不受影响的。
 
 #### demo
 

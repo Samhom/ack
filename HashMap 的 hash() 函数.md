@@ -114,3 +114,36 @@ n |= n >>> 4;
 - loadFactor译为装载因子。装载因子用来衡量HashMap满的程度。loadFactor的默认值为0.75f。计算HashMap的实时装载因子的方法为：size/capacity，而不是占用桶的数量去除以capacity。
 - threshold表示当HashMap的size大于threshold时会执行resize操作。 
   threshold=capacity*loadFactor
+  
+
+### HashMap 扩容全过程
+
+#### 1.如果HashMap的大小超过了负载因子(load factor)定义的容量，怎么办？
+
+​	默认的负载因子大小为0.75，也就是说，当一个map填满了75%的bucket时候，和其它集合类(如ArrayList等)一样，将会创建原来HashMap大小的两倍的bucket数组，来重新调整map的大小，并将原来的对象放入新的bucket数组中。这个过程叫作rehashing，因为它调用hash方法找到新的bucket位置。这个值只可能在两个地方，一个是原下标的位置，另一种是在下标为<原下标+原容量>的位置。
+
+#### 2.重新调整HashMap大小存在什么问题吗？
+
+​	当重新调整HashMap大小的时候，确实存在条件竞争，因为如果两个线程都发现HashMap需要重新调整大小了，它们会同时试着调整大小。在调整大小的过程中，存储在链表中的元素的次序会反过来，因为移动到新的bucket位置的时候，HashMap并不会将元素放在链表的尾部，而是放在头部，这是为了避免尾部遍历(tail traversing)。如果条件竞争发生了，那么就死循环了。(多线程的环境下不使用HashMap）
+
+##### 为什么多线程会导致死循环，它是怎么发生的？
+
+　　HashMap的容量是有限的。当经过多次元素插入，使得HashMap达到一定饱和度时，Key映射位置发生冲突的几率会逐渐提高。这时候，HashMap需要扩展它的长度，也就是进行Resize。
+
+##### Capacity
+
+HashMap的当前长度。HashMap的长度是2的幂。
+
+##### LoadFactor
+
+- HashMap负载因子，默认值为0.75f。
+
+- 衡量HashMap是否进行Resize的条件如下：
+
+  HashMap.Size >= Capacity * LoadFactor
+
+##### Resize步骤
+
+- 扩容：创建一个新的Entry空数组，长度是原数组的2倍。
+- ReHash：遍历原Entry数组，把所有的Entry重新Hash到新数组。为什么要重新Hash呢？因为长度扩大以后，Hash的规则也随之改变。
+- hash公式：index = HashCode（Key） & （Length - 1）

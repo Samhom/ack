@@ -59,3 +59,20 @@ HashMap 中的 Iterator 迭代器是 fail-fast 的，而 Hashtable 的 Enumerato
 #### 二、为啥 Hashtable 是不允许 KEY 和 VALUE 为 null？
 
 ​	这是因为 Hashtable 使用的是安全失败机制（fail-safe），这种机制会使你此次读到的数据不一定是最新的数据。如果你使用 null 值，就会使得其无法判断对应的 key 是不存在还是为空，因为你无法再调用一次 contain(key）来对 key 是否存在进行判断，ConcurrentHashMap 同理。
+
+
+### Q：Hashtable扩容的数组长度为什么时旧数组长度乘以2加1？
+
+A：Hashtable中数组的长度尽量为素数或者奇数，同时Hashtable采用取模的方式来计算数组下标，这样减少Hash碰撞，计算出来的数组下标更加均匀。但是这样效率会比HashMap利用位运算计算数组下标低。
+
+### Q：Hashtable为什么采用头插法的方式迁移数组？
+
+A：采用头插法的方式效率更高。如果采用尾插法需要遍历数组将元素放置到链表的末尾，而采用头插法将结点放置到链表的头部，减少了遍历数组的时间，效率更高。
+
+### Q：JDK1.8前HashMap也是采用头插法迁移数据，多线程情况下会造成死循环，JDK1.8对HashMap做出了优化，为什么JDK1.8Hashtable还是采用头插法的方式迁移数据？
+
+A：Hashtable是线程安全的，所以Hashtable不需要考虑并发冲突问题，可以采用效率更高的头插法。
+
+### Q：为什么Hashtable渐渐被弃用？
+
+A：Hashtable使用synchronized来实现线程安全，在多并发的情况下效率低下。

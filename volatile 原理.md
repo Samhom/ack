@@ -87,3 +87,11 @@ ctorInstance(memory);  // 2：初始化对象
 - 作用域不同，volatile 仅能使用在变量级别；synchronized 则可以使用在变量、方法、和类级别的。
 - volatile 不会造成线程的阻塞；synchronized 可能会造成线程的阻塞。
 - volatile 标记的变量不会被编译器优化；synchronized 标记的变量可以被编译器优化。
+
+
+背景：为了提高处理速度，处理器不直接和内存进行通信，而是先将系统内存的数据读到内部缓存（L1，L2或其他）后再进行操作，但操作完不知道何时会写到内存。
+
+- 如果对声明了volatile的变量进行写操作，JVM就会向处理器发送一条指令，将这个变量所在缓存行的数据写回到系统内存。但是，就算写回到内存，如果其他处理器缓存的值还是旧的，再执行计算操作就会有问题。
+- 在多处理器下，为了保证各个处理器的缓存是一致的，就会实现缓存一致性协议，当某个CPU在写数据时，如果发现操作的变量是共享变量，则会通知其他CPU告知该变量的缓存行是无效的，因此其他CPU在读取该变量时，发现其无效会重新从主存中加载数据。
+
+![img](https://mmbiz.qpic.cn/mmbiz_png/JfTPiahTHJhoOL12t5BxHJm2fuXNApTPnJ8n2aq5cRjNjY8fsUWvQic1via90N2y39gKCaGeenIxibQib4U0N97UdSA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)

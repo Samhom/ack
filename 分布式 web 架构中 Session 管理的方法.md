@@ -54,3 +54,9 @@
 ![img](https://upload-images.jianshu.io/upload_images/6430003-6b967add86dca19b.png?imageMogr2/auto-orient/strip|imageView2/2/w/640/format/webp)
 
 ​	集群中包含两个 Master 和两个 Slave，两个 Master 对 Session 数据进行分片存储，而 Slave 可用于进行数据备份和读写分离。
+
+4、实现
+**基于session集中存储的实现方案：**
+新增Filter，拦截请求，包装HttpServletRequest
+改写getSession方法，从session存储中获取session数据，返回自定义的HttpSession实现。
+在生成新Session后，写入sessionid到cookie中。

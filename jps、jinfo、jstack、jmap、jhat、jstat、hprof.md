@@ -1,3 +1,44 @@
+## 摘要
+#### jps                            
+
+​	主要用来输出JVM中运行的进程状态信息：jps -l -m
+
+#### jstack [option] pid  
+
+​	主要用来查看某个 Java 进程内的线程堆栈信息；
+​	在发生死锁时可以用 jstack -l pid 来观察锁持有情况；
+
+```shell
+ps -ef | grep mrf-center | grep -v grep   先找出 Java 进程 ID
+top -Hp pid                               找出该进程内最耗费 CPU 的线程
+printf "%x\n" 21742                       得到 21742 的十六进制值 54ee
+jstack 21711 | grep 54ee                  确定代码位置
+```
+
+#### jmap 
+
+​	可以输出所有内存中对象，甚至可以将 JVM 中的 heap 以二进制输出成文本。
+
+```shell
+jmap -dump:live,format=b,file=/tmp/dump.dat 21711
+jhat -port 9998 /tmp/dump.dat  localhost:9998 查看
+jhat -J-Xmx512m -port 9998 /tmp/dump.dat (Dump 文件太大，可能需要加上 -J-Xmx512m 这种参数指定最大堆内存)
+也可以使用 jvisumVM、jprofiler、gcview、easyGC、ibmheap analyzer 查看
+```
+
+	jmap -heap 19570   打印 heap 的概要信息
+	jmap -histo:live 19570    打印每个 class 的实例数目,内存占用,类全名信息
+#### jstat
+
+```
+jstat -gc 21711 250 4 间隔为 250ms，采样数为 4
+```
+
+#### hprof 
+
+​	能够展现 CPU 使用率，统计堆内存使用情况。
+
+
 ## jps、jinfo、jstack、jmap、jhat、jstat、hprof 
 
 ### 一、jps(Java Virtual Machine Process Status Tool)

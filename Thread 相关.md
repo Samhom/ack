@@ -39,6 +39,8 @@ public boolean isInterrupted(){
 
 ##### boolean interrupted() 方法
 
+由于它是静态方法，因此不能在特定的线程上使用，只能报告调用它的线程的中断状态；如果该方法被调用两次，则第二次一般是返回false，如果线程不存活，则返回false。
+
 ​	检测当前线程是否被中断，如果是返回 true，否则返回 false。与 isInterrupted 不同的是，该方法如果发现当前线程被中断，则会清除中断标志，并且该方法是 static 方法，可以通过 Thread 类直接调用。另外从下面的代码可以知道，在 interrupted() 内部是获取当前调用线程的中断标志而不是调用 interrupted() 方法的实例对象的中断标志。
 
 ```java

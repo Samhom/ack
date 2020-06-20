@@ -160,3 +160,22 @@ java 内存模型中 堆 和 栈 的联系和区别
 - 类和方法的信息大小难以确定，给永久代的大小指定困难
 - 永久代会为 GC 带来不必要的复杂度
 - 方便 HotSpot 与其他 JVM 如 Jrockit 的集成
+
+### JVM 配置参数参考
+
+```shell
+-Xmx4096m 
+-XX:-OmitStackTraceInFastThrow 
+-Xss256k 
+-Xms4096m 
+-XX:MetaspaceSize=128m 
+-XX:MaxMetaspaceSize=256m 
+-XX:+UseG1GC 
+-XX:MaxGCPauseMillis=200
+-XX:+PrintGCDetails 
+-Xloggc:/opt/logs/10723/gc-1592279812.log 
+-XX:HeapDumpPath=/opt/logs/10723 
+-XX:+PrintGC 
+-XX:+HeapDumpOnOutOfMemoryError 
+-XX:+PrintGCDateStamps
+```

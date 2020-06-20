@@ -169,8 +169,8 @@ java 内存模型中 堆 和 栈 的联系和区别
 -XX:+UseG1GC 
 -XX:MaxGCPauseMillis=200
 -XX:+PrintGCDetails 
--Xloggc:/opt/logs/10723/gc-1592279812.log 
--XX:HeapDumpPath=/opt/logs/10723 
+-Xloggc:/opt/logs/***/gc-***.log 
+-XX:HeapDumpPath=/opt/logs/***
 -XX:+PrintGC 
 -XX:+HeapDumpOnOutOfMemoryError 
 -XX:+PrintGCDateStamps
